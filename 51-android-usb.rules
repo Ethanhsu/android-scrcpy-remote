@@ -1,0 +1,33 @@
+# Allow non-root USB access to ADB-capable Android devices.
+# Installed by android-scrcpy-remote install.sh into /etc/udev/rules.d/.
+# After installing: re-plug the device (or `sudo udevadm trigger`).
+
+# Google / Pixel
+SUBSYSTEM=="usb", ATTR{idVendor}=="18d1", MODE="0666"
+SUBSYSTEM=="usb", ATTR{idVendor}=="0955", MODE="0666"
+# Samsung
+SUBSYSTEM=="usb", ATTR{idVendor}=="04e8", MODE="0666"
+# Xiaomi / Redmi
+SUBSYSTEM=="usb", ATTR{idVendor}=="1b3f", MODE="0666"
+# Zebra (industrial)
+SUBSYSTEM=="usb", ATTR{idVendor}=="17ef", MODE="0666"
+# OnePlus
+SUBSYSTEM=="usb", ATTR{idVendor}=="2717", MODE="0666"
+# ASUS / Zenfone
+SUBSYSTEM=="usb", ATTR{idVendor}=="2b78", MODE="0666"
+# LG
+SUBSYSTEM=="usb", ATTR{idVendor}=="10da", MODE="0666"
+# Huawei / Honor
+SUBSYSTEM=="usb", ATTR{idVendor}=="12d1", MODE="0666"
+# Motorola
+SUBSYSTEM=="usb", ATTR{idVendor}=="24e8", MODE="0666"
+# Sony
+SUBSYSTEM=="usb", ATTR{idVendor}=="054c", MODE="0666"
+# HTC
+SUBSYSTEM=="usb", ATTR{idVendor}=="0bb4", MODE="0666"
+# Nokia
+SUBSYSTEM=="usb", ATTR{idVendor}=="0421", MODE="0666"
+# Meizu
+SUBSYSTEM=="usb", ATTR{idVendor}=="2a44", MODE="0666"
+# Fairphone
+SUBSYSTEM=="usb", ATTR{idVendor}=="28b9", MODE="0666"
