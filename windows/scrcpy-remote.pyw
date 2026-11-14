@@ -390,7 +390,12 @@ def main():
                 p.terminate()
             except Exception:
                 pass
-        root.destroy()
+        # Destroy the window if it's still alive (Ctrl+C may have already torn
+        # the Tk interpreter down, in which case destroy() raises TclError).
+        try:
+            root.destroy()
+        except Exception:
+            pass
 
 
 if __name__ == "__main__":
