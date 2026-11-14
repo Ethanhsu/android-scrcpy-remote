@@ -378,7 +378,19 @@ def main():
     # Bind tree click for checkbox toggle
     app.tree.bind("<Button-1>", app.on_tree_click)
 
-    root.mainloop()
+    try:
+        root.mainloop()
+    except KeyboardInterrupt:
+        # Ctrl+C / console close on a console-launched GUI — clean exit, no traceback
+        pass
+    finally:
+        # Ensure any child scrcpy processes we spawned are terminated
+        for p in list(app.running.values()):
+            try:
+                p.terminate()
+            except Exception:
+                pass
+        root.destroy()
 
 
 if __name__ == "__main__":
