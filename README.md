@@ -15,10 +15,15 @@ android-scrcpy-remote/
 ├── adb-wireless-setup.sh   # Switches a USB-connected device to Wi-Fi ADB (tcpip)
 ├── adb-remote.sh           # Remote ADB helper: connect/disconnect/status over TCP
 ├── 51-android-usb.rules    # udev rules for non-root USB ADB access
+├── windows/                # Windows: prebuilt scrcpy 5.0.1 win64 + GUI/CLI launchers
+│   ├── scrcpy-remote.pyw   #   GUI launcher: pick one or more devices, mirror, stop
+│   ├── scrcpy-remote.bat   #   CLI launcher: auto-detect / picker / --serial
+│   ├── scrcpy.exe          #   scrcpy 5.0.1 win64
+│   └── ...                 #   bundled adb + runtime DLLs (ready-to-run, no install)
 └── README.md
 ```
 
-No compiled binaries are committed — `install.sh` downloads the official scrcpy release (SHA256-verified) into `~/tools/scrcpy/`.
+The Linux scripts at the root are the primary entry point — `install.sh` downloads the official scrcpy release (SHA256-verified) into `~/tools/scrcpy/`. The `windows/` folder is a self-contained, ready-to-run Windows build (no install step).
 
 ## Requirements
 
