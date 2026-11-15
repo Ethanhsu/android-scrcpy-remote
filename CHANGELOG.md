@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.0 — 2026-11-15
+
+- Stable release of the multi-device GUI launcher (Windows) + Linux/macOS shell tooling.
+- `windows/scrcpy-remote.pyw` — Tkinter GUI: pick one or more devices and mirror (multi-device, per-device status).
+- `windows/scrcpy-remote.bat` — CLI launcher: USB/TCP auto-detection, multi-device picker, `--serial`, `--list`, pass-through args.
+- Linux/macOS: `install.sh`, `scrcpy-remote.sh`, `adb-wireless-setup.sh`, `adb-remote.sh`, `51-android-usb.rules`.
+
 ## 0.1.0 — 2026-11-14
 
 - Initial release.
