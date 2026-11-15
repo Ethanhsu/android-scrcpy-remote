@@ -18,8 +18,9 @@ import re
 import subprocess
 import sys
 import threading
+import time
 import tkinter as tk
-from tkinter import ttk, messagebox
+from tkinter import ttk, messagebox, simpledialog
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -53,6 +54,47 @@ def find_adb():
         if os.path.isfile(c):
             return c
     return None
+
+def adb_connect_retry(adb, serial, attempts=8, delay=1.5, timeout=8):
+    """'adb connect <serial>' with retry/backoff (no USB required).
+
+    After adbd restarts — most commonly the few-second window right after
+    'adb tcpip 5555' flips a device into TCP mode, or when a network transport
+    drops — port 5555 refuses connections and returns 10061 "No connection
+    could be made because the target machine actively refused it". An immediate
+    single connect lands in that window and fails. Retrying with backoff waits
+    for the listener to come up, so recovery works over Wi-Fi/ethernet alone.
+
+    Note: this does NOT re-arm tcpip mode itself. If the device booted back into
+    USB mode (tcpip is not persisted across reboots on stock builds), the port
+    is genuinely closed and only a one-time 'adb tcpip' from a USB transport can
+    re-enable it — see the project notes.
+
+    Returns (ok: bool, last_output: str).
+    """
+    last = ""
+    for i in range(attempts):
+        try:
+            out = subprocess.check_output(
+                [adb, "connect", serial], timeout=timeout,
+                stderr=subprocess.STDOUT,
+            ).decode("utf-8", errors="replace")
+        except subprocess.TimeoutExpired:
+            out = "connect timed out (device still coming up)"
+        except Exception as e:
+            out = str(e)
+        last = out.strip()
+        low = out.lower()
+        if "connected" in low or "already" in low:
+            return (True, last)
+        # Escalating backoff: short waits for the quick tcpip-restart window,
+        # longer toward the end. A hang (timeout) means the device is still
+        # booting, so wait a bit extra.
+        wait = min(delay * (i + 1), 8.0)
+        if "timed out" in low:
+            wait += 4.0
+        time.sleep(wait)
+    return (False, last)
 
 def get_devices(adb):
     """Run 'adb devices -l' and return list of (serial, model, transport)."""
@@ -144,6 +186,8 @@ class App:
         btns.pack(fill="x")
         self.btn_refresh = ttk.Button(btns, text="Refresh", command=self.refresh)
         self.btn_refresh.pack(side="left")
+        self.btn_connect_tcp = ttk.Button(btns, text="Connect TCP", command=self.connect_tcp)
+        self.btn_connect_tcp.pack(side="left", padx=4)
         self.btn_select_all = ttk.Button(btns, text="Select all", command=self.select_all)
         self.btn_select_all.pack(side="left", padx=4)
         self.btn_deselect_all = ttk.Button(btns, text="Deselect all", command=self.deselect_all)
@@ -185,6 +229,49 @@ class App:
             self.root.after(0, lambda: self._update_devices(devs))
 
         threading.Thread(target=scan, daemon=True).start()
+
+    # ---------- TCP reconnection (retry/backoff, no USB required) ----------
+    def connect_tcp(self):
+        """Reconnect an ethernet/Wi-Fi device by its IP:port, retrying with
+        backoff across the adbd-restart window (the 10061 'actively refused'
+        case). Ask for the IP:port (default 5555), run the retry on a worker
+        thread so the GUI stays responsive, then refresh the device list.
+        """
+        if not self.adb:
+            messagebox.showerror("adb not found", "adb.exe not found. Install Android platform-tools.")
+            return
+
+        # Pre-fill with any currently-listed Wi-Fi device's IP (port stripped).
+        default_ip = ""
+        for serial, _m, t in self.devices:
+            if t == "Wi-Fi" and ":" in serial:
+                default_ip = serial.split(":")[0]
+                break
+        target = simpledialog.askstring(
+            "Connect TCP",
+            "Device IP (or IP:port) to connect to:",
+            initialvalue=default_ip,
+            parent=self.root,
+        )
+        if not target:
+            return
+        target = target.strip()
+        if not target:
+            return
+        serial = target if ":" in target else f"{target}:5555"
+        self.log(f"Connecting to {serial} (retry/backoff)…")
+        self.btn_connect_tcp.configure(state="disabled")
+
+        def work():
+            ok, last = adb_connect_retry(self.adb, serial)
+            self.root.after(0, lambda: self.btn_connect_tcp.configure(state="normal"))
+            if ok:
+                self.root.after(0, lambda s=serial: self.log(f"[OK  ] connected {s}"))
+            else:
+                self.root.after(0, lambda s=serial, l=last: self.log(f"[FAIL] {s}: {l}"))
+            self.root.after(0, self.refresh)
+
+        threading.Thread(target=work, daemon=True).start()
 
     def _update_devices(self, devs):
         self.devices = devs
