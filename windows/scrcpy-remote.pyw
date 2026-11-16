@@ -55,6 +55,8 @@ def find_adb():
             return c
     return None
 
+CREATE_NO_WINDOW = 0x08000000
+
 def adb_connect_retry(adb, serial, attempts=8, delay=1.5, timeout=8):
     """'adb connect <serial>' with retry/backoff (no USB required).
 
@@ -78,6 +80,7 @@ def adb_connect_retry(adb, serial, attempts=8, delay=1.5, timeout=8):
             out = subprocess.check_output(
                 [adb, "connect", serial], timeout=timeout,
                 stderr=subprocess.STDOUT,
+                creationflags=CREATE_NO_WINDOW,
             ).decode("utf-8", errors="replace")
         except subprocess.TimeoutExpired:
             out = "connect timed out (device still coming up)"
@@ -103,6 +106,7 @@ def get_devices(adb):
             [adb, "devices", "-l"],
             timeout=8,
             stderr=subprocess.DEVNULL,
+            creationflags=CREATE_NO_WINDOW,
         ).decode("utf-8", errors="replace")
     except Exception:
         return []
@@ -368,7 +372,9 @@ class App:
         def do_launch():
             try:
                 check = subprocess.check_output(
-                    [self.adb, "devices"], timeout=5, stderr=subprocess.DEVNULL
+                    [self.adb, "devices"], timeout=5,
+                    stderr=subprocess.DEVNULL,
+                    creationflags=CREATE_NO_WINDOW,
                 ).decode("utf-8", errors="replace")
                 if serial not in check:
                     self.log(f"Device {serial} no longer connected — skipping.")
@@ -377,7 +383,6 @@ class App:
                     return
 
                 cmd = [self.scrcpy, "--serial", serial] + arg_list
-                CREATE_NO_WINDOW = 0x08000000
                 p = subprocess.Popen(
                     cmd,
                     cwd=SCRIPT_DIR,
